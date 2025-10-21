@@ -7,7 +7,13 @@
     --accent-2: #1e90ff;
     --hp: #22c55e;
     --boss-hp: #dc2626;
+    --glass: rgba(255, 255, 255, 0.02);
+    --muted: rgba(255, 255, 255, 0.6);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+* {
+    box-sizing: border-box
 }
 
 html,
@@ -28,16 +34,17 @@ body {
 }
 
 #game {
-    width: 900px;
-    background: rgba(255, 255, 255, 0.02);
+    width: 70%;
+    background: var(--glass);
     border-radius: 12px;
     padding: 12px;
-    box-shadow: 0 12px 50px rgba(0, 0, 0, 0.6)
+    box-shadow: 0 12px 50px rgba(0, 0, 0, 0.6);
+    position: relative
 }
 
 canvas {
     width: 100%;
-    height: 480px;
+    height: 540px;
     border-radius: 8px;
     background: linear-gradient(180deg, #061020 0%, #07142a 100%);
     display: block;
@@ -45,7 +52,7 @@ canvas {
 }
 
 #ui {
-    width: 360px
+    width: 30%
 }
 
 .card {
@@ -56,7 +63,7 @@ canvas {
 }
 
 .muted {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--muted);
     font-size: 13px
 }
 
@@ -77,7 +84,7 @@ button.secondary {
 }
 
 #log {
-    height: 140px;
+    height: 160px;
     overflow: auto;
     background: rgba(0, 0, 0, 0.18);
     padding: 8px;
@@ -100,7 +107,8 @@ button.secondary {
     padding: 18px;
     border-radius: 10px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
-    color: #e6f2ff
+    color: #e6f2ff;
+    margin-top: 12px
 }
 
 .vn-text {
@@ -163,19 +171,72 @@ button.secondary {
     color: #2b2b28;
     padding: 18px;
     border-radius: 10px;
-    max-width: 900px;
+    max-width: 1100px;
     width: 92%;
     max-height: 86vh;
     overflow: auto
 }
 
-.bestiary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 12px
 }
 
-/* on-screen controls */
+.bestiary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 12px
+}
+
+.bestiary-entry {
+    background: #fff7e8;
+    padding: 8px;
+    border-radius: 8px;
+    color: #2b2b28;
+    cursor: pointer
+}
+
+.bestiary-sidebar {
+    width: 360px;
+    background: #fff8e6;
+    padding: 12px;
+    border-radius: 8px;
+    margin-left: 12px
+}
+
+/* pager */
+.pager {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px
+}
+
+.pager button {
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    color: #2b2b28;
+    padding: 6px 8px
+}
+
+/* HUD mini */
+.hud-mini {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center
+}
+
+.hud-mini .muted {
+    color: #cfe8ff
+}
+
+/* controls */
 .controls {
     position: fixed;
     left: 18px;
@@ -221,6 +282,21 @@ button.secondary {
     font-weight: 800
 }
 
+/* settings small */
+.small-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px
+}
+
+.small-settings label {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px
+}
+
 /* responsive */
 @media (max-width:1100px) {
     .wrap {
@@ -255,4 +331,17 @@ button.secondary {
     .action-btns {
         margin-left: 6px
     }
+}
+
+/* subtle vignette */
+#game:after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border-radius: 12px;
+    box-shadow: inset 0 120px 200px rgba(0, 0, 0, 0.45)
 }
