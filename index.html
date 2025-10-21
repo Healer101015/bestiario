@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>O Bestiário do Herói v3 — Protótipo JS</title>
+    <style>
+        :root {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            --bg-dark: #071226;
+            --bg-med: #0c1624;
+            --bg-light: #071827;
+            --text-primary: #e6eef8;
+            --text-secondary: #93b8d6;
+            --accent: #1e90ff;
+            --accent-dark: #0f2a3a;
+            --accent-text: #bfe6ff;
+            --hp-color: #22c55e;
+            --hp-bg: #3f3f46;
+            --boss-hp-color: #dc2626;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            gap: 16px;
+            padding: 18px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        #game {
+            background: var(--bg-med);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, .6);
+        }
+
+        canvas {
+            background: linear-gradient(180deg, #061020 0%, #07142a 100%);
+            border-radius: 6px;
+            display: block;
+            cursor: crosshair;
+        }
+
+        #ui {
+            width: 360px;
+        }
+
+        .card {
+            background: var(--bg-light);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        button {
+            background: var(--accent);
+            border: none;
+            padding: 8px 10px;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            margin-right: 6px;
+            font-weight: 500;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+
+        button:hover {
+            background: #4ca8ff;
+        }
+
+        button:disabled {
+            background: #555;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        button#executarAcao {
+            background: #e11d48;
+        }
+
+        button#executarAcao:hover:not(:disabled) {
+            background: #fb4b6f;
+        }
+
+        .small {
+            font-size: 13px;
+            color: #bcd3ee;
+        }
+
+        #log {
+            height: 130px;
+            overflow: auto;
+            background: #061522;
+            padding: 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #cfe8ff;
+        }
+
+        .pattern-pill {
+            display: inline-block;
+            background: var(--accent-dark);
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin: 4px 6px;
+            color: var(--accent-text);
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        h2 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+
+        .stat {
+            margin-bottom: 8px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .muted {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        footer {
+            color: #7fa6c9;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        /* Modal genérico */
+        .modal-backdrop {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: #06202a;
+            padding: 24px;
+            border-radius: 10px;
+            min-width: 300px;
+            max-width: 600px;
+            color: #eaf6ff;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+        }
+
+        .modal-content h3 {
+            margin: 0 0 8px 0;
+        }
+
+        .modal-content p {
+            margin: 0 0 12px 0;
+        }
+
+        .modal-footer {
+            margin-top: 16px;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game" class="card">
+        <canvas id="c" width="800" height="420"></canvas>
+    </div>
+
+    <div id="ui">
+        <div class="card">
+            <h2>Bestiário do Herói</h2>
+            <div class="small">Use o bestiário para ver o padrão de contra-ataque. Reproduza-o e execute a ação!</div>
+            <div style="margin-top:12px">
+                <button id="openBest">Bestiário</button>
+                <button id="nextBoss">Próximo Boss</button>
+                <button id="executarAcao">Executar Ação</button>
+                <button id="resetPattern">Resetar</button>
+            </div>
+
+            <div style="margin-top:12px" class="stat">
+                <div class="muted">Sequência registrada:</div>
+                <div id="patternContainer" style="min-height: 28px;"></div>
+            </div>
+
+            <div style="margin-top:8px" class="stat">
+                <div class="muted">Controles:</div>
+                <div class="small">←/A, →/D = Mover · ↑/W = Pular · ↓/S = Agachar · Espaço = Atacar · Shift = Especial
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="center">Log de Batalha</h2>
+            <div id="log"></div>
+        </div>
+
+        <div class="card">
+            <div class="muted">Como Jogar:</div>
+            <ul>
+                <li>Abra o Bestiário para ver o <b>padrão de contra-ataque</b> do boss.</li>
+                <li>Use as teclas para registrar a sequência exata.</li>
+                <li>Clique <b>"Executar Ação"</b>.</li>
+                <li><b>Sucesso:</b> Você causa dano ao boss.</li>
+                <li><b>Falha:</b> O boss ataca e você perde HP!</li>
+                <li>Se seu HP chegar a 0, é Game Over.</li>
+            </ul>
+            <footer>Protótipo v3 — com Arte de Boss e Screen Shake</footer>
+        </div>
+    </div>
+
+    <div id="modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3 id="modalTitle"></h3>
+            <p id="modalDesc"></p>
+            <div id="modalPattern"></div>
+            <div class="modal-footer">
+                <button id="closeModal">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal-backdrop">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="color:#e11d48; font-size: 24px;">GAME OVER</h3>
+            <p>Você foi derrotado.</p>
+            <div class="modal-footer" style="text-align: center;">
+                <button id="restartGame">Tentar Novamente</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ---- Protótipo Bestiário v3 — JavaScript ----
+          MELHORIAS:
+          - [CORREÇÃO] Posição do herói, boss e chão corrigidas.
+          - [ARTE] Bosses agora têm arte única (via função `draw` no objeto).
+          - [FEEDBACK] Adicionado Screen Shake ao tomar dano.
+          - [FEEDBACK] Adicionada invencibilidade (piscar) ao herói após dano.
+          - [UI] Botões são desabilitados no Game Over.
+        */
+
+        // ====== Setup básico ======
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const logEl = document.getElementById('log');
+        const patternContainer = document.getElementById('patternContainer');
+
+        // Modais
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+        const modalPattern = document.getElementById('modalPattern');
+        const gameOverModal = document.getElementById('gameOverModal');
+
+        // Elementos da UI (para desabilitar)
+        const uiButtons = {
+            openBest: document.getElementById('openBest'),
+            nextBoss: document.getElementById('nextBoss'),
+            executarAcao: document.getElementById('executarAcao'),
+            resetPattern: document.getElementById('resetPattern')
+        };
+
+        function log(msg, color = '#cfe8ff') {
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML = `<span style="color:${color}">[${time}] ${msg}</span><br>` + logEl.innerHTML;
+        }
+
+        // ====== Efeitos Sonoros (Sem alterações) ======
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (!audioCtx) return;
+            // ... (código de áudio original, sem mudanças) ...
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+            if (type === 'click') {
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            } else if (type === 'hit') {
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            } else if (type === 'damage') {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            } else if (type === 'win') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            } else if (type === 'gameover') {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(110, audioCtx.currentTime); // A2
+                oscillator.frequency.exponentialRampToValueAtTime(55, audioCtx.currentTime + 1.0);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.0);
+            }
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 1);
+        }
+
+        // ====== Bosses (COM ARTE ÚNICA) ======
+        const bosses = [
+            {
+                name: "Harpia",
+                hp: 3,
+                attackDamage: 1,
+                description: "Harpia: Um ataque aéreo rápido. Contra-ataque: esquiva (left), esquiva (right) e ataque (attack).",
+                pattern: ["left", "right", "attack"],
+                draw: (ctx, x, y) => { // x, y = posição dos "pés"
+                    // Corpo
+                    ctx.fillStyle = '#c0a080';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y - 40, 30, 40, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Asas
+                    ctx.fillStyle = '#f0e0d0';
+                    ctx.beginPath();
+                    ctx.moveTo(x - 25, y - 40);
+                    ctx.lineTo(x - 70, y - 60);
+                    ctx.lineTo(x - 25, y - 20);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(x + 25, y - 40);
+                    ctx.lineTo(x + 70, y - 60);
+                    ctx.lineTo(x + 25, y - 20);
+                    ctx.fill();
+                    // Olhos
+                    ctx.fillStyle = '#28120b';
+                    ctx.fillRect(x - 10, y - 50, 5, 5);
+                    ctx.fillRect(x + 5, y - 50, 5, 5);
+                }
+            },
+            {
+                name: "Minotauro",
+                hp: 5,
+                attackDamage: 1,
+                description: "Minotauro: Uma investida poderosa. Contra-ataque: avance (right), pule (up) e golpeie duas vezes (attack, attack).",
+                pattern: ["right", "up", "attack", "attack"],
+                draw: (ctx, x, y) => {
+                    // Corpo
+                    ctx.fillStyle = '#a0522d';
+                    ctx.fillRect(x - 40, y - 120, 80, 120);
+                    // Cabeça
+                    ctx.fillStyle = '#d2691e';
+                    ctx.fillRect(x - 30, y - 140, 60, 30);
+                    // Chifres
+                    ctx.fillStyle = '#f0f0f0';
+                    ctx.beginPath();
+                    ctx.moveTo(x - 25, y - 140);
+                    ctx.quadraticCurveTo(x - 40, y - 160, x - 30, y - 170);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(x + 25, y - 140);
+                    ctx.quadraticCurveTo(x + 40, y - 160, x + 30, y - 170);
+                    ctx.fill();
+                    // Olhos
+                    ctx.fillStyle = '#dc2626';
+                    ctx.fillRect(x - 15, y - 130, 8, 8);
+                    ctx.fillRect(x + 7, y - 130, 8, 8);
+                }
+            },
+            {
+                name: "Ciclope",
+                hp: 4,
+                attackDamage: 2,
+                description: "Ciclope: Prepara um raio ocular. Contra-ataque: pule (up), agache (down), pule (up).",
+                pattern: ["up", "down", "up"],
+                draw: (ctx, x, y) => {
+                    // Corpo
+                    ctx.fillStyle = '#4a934a';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y - 50, 50, 50, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Olho
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y - 60, 20, 20, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Pupila
+                    ctx.fillStyle = '#28120b';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y - 60, 8, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            },
+            {
+                name: "Ent Antigo",
+                hp: 8,
+                attackDamage: 1,
+                description: "Ent: Ataque de raízes. Contra-ataque: fuja (left, left), prepare um feitiço (special).",
+                pattern: ["left", "left", "special"],
+                draw: (ctx, x, y) => {
+                    // Tronco
+                    ctx.fillStyle = '#5c3a21';
+                    ctx.fillRect(x - 50, y - 150, 100, 150);
+                    // Folhagem
+                    ctx.fillStyle = '#228b22';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y - 150, 70, 50, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(x - 30, y - 140, 50, 30, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Olhos
+                    ctx.fillStyle = '#ffef8a';
+                    ctx.fillRect(x - 20, y - 100, 10, 10);
+                    ctx.fillRect(x + 10, y - 100, 10, 10);
+                }
+            }
+        ];
+
+        let bossIndex = 0;
+
+        // ====== Estado do Jogo ======
+        const GRAVITY = 0.5;
+        const GROUND_Y = 360; // [CORREÇÃO] Ponto 0 do "chão"
+
+        const state = {
+            hero: {
+                x: 120, y: GROUND_Y, w: 36, h: 48,
+                hp: 5, maxHp: 5,
+                vy: 0, // velocidade vertical
+                isGrounded: true,
+                isAttacking: 0, // timer para animação
+                isInvincible: 0 // [MELHORIA] timer para invencibilidade
+            },
+            boss: null,
+            inputs: [],
+            maxPatternLength: 8,
+            feedbacks: [],
+            gameState: 'playing', // 'playing' | 'gameover'
+            screenShake: 0 // [MELHORIA]
+        };
+
+        function loadBoss(index) {
+            const b = bosses[index];
+            state.boss = {
+                ...b,
+                hp: b.hp, // reseta o HP
+                maxHp: b.hp,
+                pattern: b.pattern.slice(),
+                isAttacking: 0 // timer
+            };
+            state.inputs = [];
+            renderPattern();
+            log(`Um(a) ${state.boss.name} selvagem aparece!`);
+        }
+
+        function startGame() {
+            state.hero.hp = state.hero.maxHp;
+            state.hero.x = 120;
+            state.hero.y = GROUND_Y; // [CORREÇÃO]
+            state.hero.vy = 0;
+            state.hero.isInvincible = 0;
+            state.screenShake = 0;
+
+            bossIndex = 0;
+            loadBoss(bossIndex);
+
+            state.gameState = 'playing';
+            setUIEnabled(true); // [MELHORIA]
+            log('Jogo iniciado. Boa sorte!', '#ffef8a');
+            closeModal(gameOverModal);
+        }
+
+        // [MELHORIA] Função para habilitar/desabilitar UI
+        function setUIEnabled(enabled) {
+            uiButtons.openBest.disabled = !enabled;
+            uiButtons.nextBoss.disabled = !enabled;
+            uiButtons.executarAcao.disabled = !enabled;
+            uiButtons.resetPattern.disabled = !enabled;
+        }
+
+
+        // ====== Inputs ======
+        const keyMap = {
+            ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down",
+            a: "left", d: "right", w: "up", s: "down", " ": "attack",
+            Shift: "special"
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (state.gameState !== 'playing') return;
+
+            const k = e.key;
+            let action = keyMap[k];
+
+            if (!action && k === " ") action = "attack";
+            if (!action && k === "Shift") action = "special";
+
+            if (action) {
+                e.preventDefault();
+                registerAction(action);
+            }
+        });
+
+        function registerAction(action) {
+            if (state.inputs.length >= state.maxPatternLength) {
+                log('Sequência cheia (max ' + state.maxPatternLength + ')');
+                return;
+            }
+
+            // Registrar ação para o padrão
+            state.inputs.push(action);
+            renderPattern();
+            log('Ação registrada: ' + action);
+            playSound('click');
+
+            // --- Movimentação do Herói ---
+            switch (action) {
+                case 'left':
+                    state.hero.x -= 15;
+                    break;
+                case 'right':
+                    state.hero.x += 15;
+                    break;
+                case 'up':
+                    if (state.hero.isGrounded) {
+                        state.hero.vy = -10; // Força do pulo
+                        state.hero.isGrounded = false;
+                    }
+                    break;
+                case 'down':
+                    // Ação de agachar (pode ser implementada a animação)
+                    break;
+                case 'attack':
+                    state.hero.isAttacking = 300; // 300ms de animação
+                    break;
+            }
+
+            // Limitar herói ao canvas
+            state.hero.x = Math.max(state.hero.w / 2, Math.min(canvas.width - state.hero.w / 2, state.hero.x));
+
+            // Feedback visual no canvas
+            state.feedbacks.push({
+                text: action,
+                x: state.hero.x + Math.random() * 30 - 15,
+                y: state.hero.y - 60,
+                t: 1000
+            });
+        }
+
+        function renderPattern() {
+            patternContainer.innerHTML = '';
+            state.inputs.forEach(act => {
+                const el = document.createElement('span');
+                el.className = 'pattern-pill';
+                el.textContent = act;
+                patternContainer.appendChild(el);
+            });
+        }
+
+        function resetPattern() {
+            state.inputs = [];
+            renderPattern();
+        }
+
+        // ====== UI Buttons ======
+        uiButtons.openBest.addEventListener('click', () => openModal(modal));
+        document.getElementById('closeModal').addEventListener('click', () => closeModal(modal));
+        uiButtons.nextBoss.addEventListener('click', () => {
+            bossIndex = (bossIndex + 1) % bosses.length;
+            loadBoss(bossIndex);
+        });
+        uiButtons.executarAcao.addEventListener('click', () => {
+            confirmAction();
+        });
+        uiButtons.resetPattern.addEventListener('click', () => resetPattern());
+        document.getElementById('restartGame').addEventListener('click', () => startGame());
+
+        function openModal(modalEl) {
+            if (state.gameState === 'gameover' && modalEl !== gameOverModal) return;
+
+            if (modalEl === modal && state.boss) {
+                modalTitle.textContent = state.boss.name;
+                modalDesc.textContent = state.boss.description;
+                modalPattern.innerHTML = '';
+                state.boss.pattern.forEach(p => {
+                    const pill = document.createElement('span');
+                    pill.className = 'pattern-pill';
+                    pill.textContent = p;
+                    modalPattern.appendChild(pill);
+                });
+                log('Bestiário aberto: ' + state.boss.name);
+            }
+            modalEl.style.display = 'flex';
+        }
+        function closeModal(modalEl) {
+            modalEl.style.display = 'none';
+        }
+
+        // ====== Lógica da Batalha ======
+        function confirmAction() {
+            if (state.gameState !== 'playing' || state.hero.isInvincible > 0) return;
+
+            const got = state.inputs;
+            const want = state.boss.pattern;
+            let success = got.length === want.length;
+
+            if (success) {
+                for (let i = 0; i < want.length; i++) {
+                    if (got[i] !== want[i]) {
+                        success = false;
+                        break;
+                    }
+                }
+            }
+
+            if (success) {
+                // --- SUCESSO ---
+                log('Padrão correto! Você ataca o ' + state.boss.name, '#6bff94');
+                playSound('hit');
+                state.boss.hp -= 1; // Dano padrão
+                state.hero.isAttacking = 500;
+                state.feedbacks.push({ text: 'HIT!', x: state.boss.x, y: state.boss.y, t: 1400, big: true, color: '#ffef8a' });
+
+                // Checar se boss morreu
+                if (state.boss.hp <= 0) {
+                    log(state.boss.name + ' derrotado!', '#ffef8a');
+                    playSound('win');
+                    state.feedbacks.push({ text: 'VITÓRIA!', x: canvas.width / 2, y: canvas.height / 2, t: 2000, big: true, color: '#6bff94' });
+                    // Avançar para próximo boss
+                    setTimeout(() => {
+                        bossIndex = (bossIndex + 1) % bosses.length;
+                        loadBoss(bossIndex);
+                    }, 1500);
+                }
+
+            } else {
+                // --- FALHA ---
+                log('Padrão incorreto! ' + state.boss.name + ' ataca!', '#ff6b6b');
+                playSound('damage');
+                state.hero.hp -= state.boss.attackDamage;
+                state.boss.isAttacking = 500;
+                state.feedbacks.push({ text: 'DANO!', x: state.hero.x, y: state.hero.y - 60, t: 1400, big: true, color: '#ff6b6b' });
+
+                state.hero.isInvincible = 1000; // [MELHORIA] 1s de invencibilidade
+                state.screenShake = 15; // [MELHORIA] Ativa o screen shake
+
+                // Checar se herói morreu
+                if (state.hero.hp <= 0) {
+                    state.hero.hp = 0;
+                    gameOver();
+                }
+            }
+
+            resetPattern();
+        }
+
+        function gameOver() {
+            state.gameState = 'gameover';
+            log('GAME OVER.', '#e11d48');
+            playSound('gameover');
+            openModal(gameOverModal);
+            setUIEnabled(false); // [MELHORIA]
+        }
+
+        // ====== Canvas Drawing & Loop ======
+
+        function drawHero() {
+            const h = state.hero;
+
+            // [MELHORIA] Pular desenho para criar efeito de "piscar"
+            if (h.isInvincible > 0 && Math.floor(h.isInvincible / 100) % 2 === 0) {
+                return;
+            }
+
+            ctx.save();
+
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(h.x, GROUND_Y, h.w / 2, h.w / 4); // [CORREÇÃO] Sombra no chão
+            ctx.fill();
+
+            // Posição de ataque (lurch forward)
+            const attackOffset = state.hero.isAttacking > 0 ? 10 : 0;
+
+            // corpo [CORREÇÃO] Desenhado para CIMA a partir de h.y (chão)
+            ctx.fillStyle = '#6bd3ff';
+            ctx.fillRect(h.x - h.w / 2 + attackOffset, h.y - h.h, h.w, h.h);
+            // cabeça
+            ctx.fillStyle = '#eafcff';
+            ctx.fillRect(h.x - 10 + attackOffset, h.y - h.h - 12, 20, 14);
+
+            // Espada (durante ataque)
+            if (state.hero.isAttacking > 0) {
+                ctx.fillStyle = '#f0f0f0';
+                // [CORREÇÃO] Posição da espada relativa ao corpo
+                ctx.fillRect(h.x + h.w / 2 + attackOffset, h.y - h.h * 0.75, 30, 8); // Lâmina
+                ctx.fillStyle = '#a0522d';
+                ctx.fillRect(h.x + h.w / 2 + attackOffset - 5, h.y - h.h * 0.75, 5, 8); // Guarda
+            }
+
+            ctx.restore();
+        }
+
+        function drawBoss() {
+            if (!state.boss) return;
+
+            // Posição fixa
+            const bx = 660;
+            const by = GROUND_Y; // [CORREÇÃO] Pés do boss no chão
+            state.boss.x = bx; // Salva para feedbacks
+            state.boss.y = by - 60; // Ponto de origem do feedback (meio do corpo)
+
+            // Animação de ataque
+            const attackOffset = state.boss.isAttacking > 0 ? -15 : 0;
+
+            ctx.save();
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(bx + attackOffset, GROUND_Y, 50, 15); // [CORREÇÃO] Sombra no chão
+            ctx.fill();
+
+            // [MELHORIA] Chama a função de desenho específica do boss
+            if (state.boss.draw) {
+                state.boss.draw(ctx, bx + attackOffset, by);
+            } else {
+                // Fallback caso a função 'draw' não exista
+                ctx.fillStyle = '#ff9b6b';
+                ctx.fillRect(bx - 40 + attackOffset, by - 120, 80, 120);
+            }
+
+            ctx.restore();
+        }
+
+        // feedbacks (texto que sobe e some)
+        function drawFeedbacks(dt) {
+            for (let i = state.feedbacks.length - 1; i >= 0; i--) {
+                const f = state.feedbacks[i];
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, f.t / 1200);
+                ctx.font = f.big ? 'bold 28px system-ui' : '14px monospace';
+                ctx.fillStyle = f.color || '#bfe6ff';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 4;
+                ctx.fillText(f.text, f.x, f.y);
+                ctx.restore();
+                // move up and decay
+                f.y -= dt * 0.08;
+                f.t -= dt;
+                if (f.t <= 0) state.feedbacks.splice(i, 1);
+            }
+        }
+
+        // Barras de HP e UI no Canvas (sem alterações)
+        function drawCanvasUI() {
+            // --- Barra de HP do Herói ---
+            const heroHPWidth = 200;
+            const heroHPRatio = Math.max(0, state.hero.hp / state.hero.maxHp);
+            ctx.fillStyle = 'var(--hp-bg)';
+            ctx.fillRect(20, 20, heroHPWidth, 20);
+            ctx.fillStyle = 'var(--hp-color)';
+            ctx.fillRect(20, 20, heroHPWidth * heroHPRatio, 20);
+            // Texto HP Herói
+            ctx.fillStyle = 'white';
+            ctx.font = '14px system-ui';
+            ctx.fillText(`Herói: ${state.hero.hp} / ${state.hero.maxHp}`, 25, 35);
+
+            // --- Barra de HP do Boss ---
+            if (state.boss) {
+                const bossHPWidth = 200;
+                const bossHPRatio = Math.max(0, state.boss.hp / state.boss.maxHp);
+                const bossHP_X = canvas.width - bossHPWidth - 20;
+                ctx.fillStyle = 'var(--hp-bg)';
+                ctx.fillRect(bossHP_X, 20, bossHPWidth, 20);
+                ctx.fillStyle = 'var(--boss-hp-color)';
+                ctx.fillRect(bossHP_X + (bossHPWidth * (1 - bossHPRatio)), 20, bossHPWidth * bossHPRatio, 20);
+                // Texto HP Boss
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${state.boss.name}: ${state.boss.hp} / ${state.boss.maxHp}`, canvas.width - 25, 35);
+                ctx.textAlign = 'left'; // reset
+            }
+
+            // --- Texto de Game Over ---
+            if (state.gameState === 'gameover') {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#e11d48';
+                ctx.font = 'bold 48px system-ui';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        let last = performance.now();
+        function loop(now) {
+            const dt = now - last;
+            last = now;
+
+            // --- Atualizar Estado (Update) ---
+            if (state.gameState === 'playing') {
+                // Física do Herói
+                if (!state.hero.isGrounded) {
+                    state.hero.vy += GRAVITY;
+                    state.hero.y += state.hero.vy;
+
+                    if (state.hero.y >= GROUND_Y) { // [CORREÇÃO] Checa contra o chão
+                        state.hero.y = GROUND_Y;
+                        state.hero.vy = 0;
+                        state.hero.isGrounded = true;
+                    }
+                }
+
+                // Timers de animação
+                if (state.hero.isAttacking > 0) state.hero.isAttacking -= dt;
+                if (state.hero.isInvincible > 0) state.hero.isInvincible -= dt; // [MELHORIA]
+                if (state.boss && state.boss.isAttacking > 0) state.boss.isAttacking -= dt;
+            }
+
+            // --- Desenhar (Draw) ---
+
+            ctx.save(); // Salva o contexto para o screen shake
+
+            // [MELHORIA] Aplica o Screen Shake
+            if (state.screenShake > 0) {
+                const dx = (Math.random() - 0.5) * state.screenShake * 1.5;
+                const dy = (Math.random() - 0.5) * state.screenShake * 1.5;
+                ctx.translate(dx, dy);
+                state.screenShake *= 0.9; // Decaimento
+                if (state.screenShake < 1) state.screenShake = 0;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Chão [CORREÇÃO]
+            ctx.fillStyle = '#04111a';
+            ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+
+            // Entidades
+            drawHero();
+            drawBoss();
+
+            // UI do Canvas
+            drawFeedbacks(dt);
+            drawCanvasUI();
+
+            ctx.restore(); // Restaura o contexto (remove o shake)
+
+            requestAnimationFrame(loop);
+        }
+
+        // ====== Inicialização ======
+        startGame();
+
+    </script>
+</body>
+
+</html>
