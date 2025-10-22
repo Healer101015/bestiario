@@ -45,6 +45,45 @@
         logEl.innerHTML = `<div style="color:${color};font-family:monospace">[${t}] ${msg}</div>` + logEl.innerHTML;
     }
 
+    // *** ADICIONADO: CARREGADOR DE SPRITES DO HERÓI ***
+    const heroSprites = {
+        idle: [],
+        attack1: []
+    };
+    let spritesLoaded = 0;
+    // 8 frames idle (0-7), 6 frames attack (0-5)
+    const totalSprites = 8 + 6;
+
+    function loadHeroSprites() {
+        const onSpriteLoad = () => {
+            spritesLoaded++;
+            if (spritesLoaded === totalSprites) {
+                log('Sprites do Herói carregados.', '#90ee90');
+            }
+        };
+
+        // Carregar Idle (0-7)
+        for (let i = 0; i < 8; i++) {
+            const img = new Image();
+            // Assumindo que a pasta 'hero' está no mesmo nível que index.html
+            img.src = `hero/Idle/HeroKnight_Idle_${i}.png`;
+            img.onload = onSpriteLoad;
+            img.onerror = () => log(`Erro ao carregar hero/Idle/HeroKnight_Idle_${i}.png`, '#ff6b6b');
+            heroSprites.idle.push(img);
+        }
+
+        // Carregar Attack1 (0-5)
+        // (Você enviou 6 frames de ataque, de 0 a 5)
+        for (let i = 0; i < 6; i++) {
+            const img = new Image();
+            img.src = `hero/Attack1/HeroKnight_Attack1_${i}.png`;
+            img.onload = onSpriteLoad;
+            img.onerror = () => log(`Erro ao carregar hero/Attack1/HeroKnight_Attack1_${i}.png`, '#ff6b6b');
+            heroSprites.attack1.push(img);
+        }
+    }
+    // *** FIM DO BLOCO ADICIONADO ***
+
     // small wrapper for audio
     const Audio = window.AudioAPI;
 
@@ -152,7 +191,16 @@
     const SAVE_KEY = 'bestiario_v1_2_save';
     const state = {
         mode: 'vn',
-        hero: { x: 120, y: 360, w: 40, h: 50, hp: 5, maxHp: 5, vy: 0, isGrounded: true, isAttacking: 0, isInvincible: 0, dir: 'right' },
+        // *** ESTADO DO HERÓI ATUALIZADO ***
+        hero: {
+            x: 120, y: 360, w: 162, h: 162, hp: 5, maxHp: 5, vy: 0, isGrounded: true,
+            animState: 'idle', // 'idle', 'attack1', etc.
+            animFrame: 0,      // Frame atual da animação
+            animTimer: 0,      // Temporizador para trocar de frame
+            isInvincible: 0,
+            dir: 'right'
+        },
+        // *** FIM DA ATUALIZAÇÃO ***
         boss: null,
         inputs: [],
         mistakes: 0,
@@ -298,16 +346,41 @@
     const keyMap = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', a: 'left', d: 'right', w: 'up', s: 'down', ' ': 'attack', Shift: 'special' };
     window.addEventListener('keydown', (e) => { if (state.mode !== 'playing' && state.mode !== 'arena') return; const action = keyMap[e.key]; if (action) { e.preventDefault(); registerAction(action); } });
 
+    // *** FUNÇÃO registerAction ATUALIZADA ***
     function registerAction(action) {
         if (state.inputs.length >= 8) return;
+        // Impede novas ações enquanto ataca
+        if (state.hero.animState === 'attack1') return;
+
         state.inputs.push(action);
         renderPattern();
         if (Audio) Audio.sfx('click');
-        if (action === 'left') state.hero.x -= 12;
-        if (action === 'right') state.hero.x += 12;
-        if (action === 'up' && state.hero.isGrounded) { state.hero.vy = -10; state.hero.isGrounded = false; }
+
+        // Atualiza posição e direção
+        if (action === 'left') {
+            state.hero.x -= 12;
+            state.hero.dir = 'left';
+        }
+        if (action === 'right') {
+            state.hero.x += 12;
+            state.hero.dir = 'right';
+        }
+        if (action === 'up' && state.hero.isGrounded) {
+            state.hero.vy = -10;
+            state.hero.isGrounded = false;
+        }
+
+        // LÓGICA DE ANIMAÇÃO DE ATAQUE
+        if (action === 'attack') {
+            state.hero.animState = 'attack1';
+            state.hero.animFrame = 0;
+            state.hero.animTimer = 0;
+        }
+
         state.hero.x = Math.max(state.hero.w / 2, Math.min(canvas.width - state.hero.w / 2, state.hero.x));
     }
+    // *** FIM DA ATUALIZAÇÃO ***
+
     // onscreen controls wiring
     function bindOnscreen() {
         if (onScreen.up) onScreen.up.addEventListener('click', () => registerAction('up'));
@@ -460,15 +533,53 @@
     const GRAVITY = 0.5, GROUND_Y = 360, MAX_MISTAKES = 3;
     let last = performance.now();
 
+    // *** FUNÇÃO drawHero SUBSTITUÍDA ***
     function drawHero() {
         const h = state.hero;
         ctx.save();
-        const bob = Math.sin(performance.now() / 250) * 3;
-        ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(h.x, GROUND_Y, h.w / 2, h.w / 4, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#6bd3ff'; ctx.fillRect(h.x - h.w / 2, h.y - h.h + bob, h.w, h.h);
-        if (h.isAttacking > 0) { ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(h.x + (h.dir === 'right' ? 20 : -44), h.y - h.h + 12, 24, 8); }
+
+        // 1. Desenha a sombra no chão
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        // Ajusta a sombra para o tamanho do sprite
+        ctx.ellipse(h.x, GROUND_Y, h.w / 4.5, h.w / 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Seleciona o array de animação correto
+        let currentAnimArray = heroSprites.idle;
+        if (h.animState === 'attack1' && heroSprites.attack1.length > 0) {
+            currentAnimArray = heroSprites.attack1;
+        }
+
+        // 3. Pega o frame (imagem) atual
+        let frameImg = currentAnimArray[h.animFrame];
+        if (!frameImg) {
+            // Fallback caso a imagem não esteja carregada
+            frameImg = heroSprites.idle[0];
+        }
+
+        // 4. Lógica para virar o sprite (esquerda/direita)
+        if (h.dir === 'left') {
+            ctx.scale(-1, 1);
+        }
+
+        // 5. Desenha a imagem na tela
+        if (frameImg && frameImg.complete) {
+            // A posição (h.x, h.y) é a base central do herói
+            const drawX = (h.x - h.w / 2);
+            const drawY = (h.y - h.h); // h.y é o chão, desenha h.h pixels para cima
+
+            if (h.dir === 'left') {
+                // Ao usar scale(-1, 1), a coordenada X é invertida
+                ctx.drawImage(frameImg, -drawX - h.w, drawY, h.w, h.h);
+            } else {
+                ctx.drawImage(frameImg, drawX, drawY, h.w, h.h);
+            }
+        }
+
         ctx.restore();
     }
+    // *** FIM DA SUBSTITUIÇÃO ***
 
     function drawBoss() {
         if (!state.boss) return;
@@ -527,13 +638,40 @@
         ctx.restore();
     }
 
+    // *** CONSTANTE DE ANIMAÇÃO ADICIONADA ***
+    const ANIM_SPEED = 90; // ms por frame (aprox 11 FPS)
+
+    // *** FUNÇÃO loop ATUALIZADA ***
     function loop(now) {
         const dt = now - last; last = now;
+
+        // Física do Herói
         if (!state.hero.isGrounded) {
             state.hero.vy += GRAVITY; state.hero.y += state.hero.vy;
             if (state.hero.y >= GROUND_Y) { state.hero.y = GROUND_Y; state.hero.vy = 0; state.hero.isGrounded = true; }
         }
-        if (state.hero.isAttacking > 0) state.hero.isAttacking -= dt;
+
+        // LÓGICA DE ANIMAÇÃO DO HERÓI (NOVO)
+        const h = state.hero;
+        h.animTimer += dt;
+        if (h.animTimer >= ANIM_SPEED) {
+            h.animTimer = 0;
+            h.animFrame++;
+
+            if (h.animState === 'idle') {
+                if (h.animFrame >= heroSprites.idle.length) {
+                    h.animFrame = 0; // Reinicia animação idle
+                }
+            } else if (h.animState === 'attack1') {
+                if (h.animFrame >= heroSprites.attack1.length) {
+                    h.animFrame = 0;
+                    h.animState = 'idle'; // Retorna para 'idle' após o ataque
+                }
+            }
+        }
+        // FIM DA LÓGICA DE ANIMAÇÃO
+
+        //if (state.hero.isAttacking > 0) state.hero.isAttacking -= dt; // Linha antiga removida
         if (state.hero.isInvincible > 0) state.hero.isInvincible -= dt;
         if (state.boss && state.boss.isAttacking > 0) state.boss.isAttacking -= dt;
 
@@ -543,6 +681,7 @@
 
         requestAnimationFrame(loop);
     }
+    // *** FIM DA ATUALIZAÇÃO ***
 
     function drawIntro() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -595,6 +734,7 @@
     refreshBestiary();
     renderPattern();
     setUIEnabled(false);
+    loadHeroSprites(); // *** CHAMADA PARA CARREGAR SPRITES ***
     drawIntro();
     // start VN automatically
     playVN(VN_PROLOGUE, () => {
