@@ -98,25 +98,54 @@
         return { id, name, attackDamage: 1, img: '', phases: [p1, p2], notes: ['Entrada gerada.'] };
     }
 
-    // VN content
+    // VN content (EXPANDIDO CONFORME SOLICITADO)
     const VN_PROLOGUE = [
-        { speaker: '', text: "O livro jazia sob pó e ossos — couro rachado, páginas unidas por memórias." },
-        { speaker: 'Espírito do Herói', text: "Se você abriu isto, saiba: falhei. Escrevi para quem vier depois de mim." },
-        { speaker: 'Espírito do Herói', text: "Leve o Bestiário, memorize os padrões. Não repita meus erros." },
-        { speaker: 'Narrador', text: "Você ergue o livro. Uma palavra — promessa — paira no ar: 'Concluir'." }
+        { speaker: '', text: "O livro jazia sob pó e ossos. O couro estava rachado, não pelo tempo, mas pelo peso do fracasso." },
+        { speaker: 'Espírito do Herói', text: "Então... outro encontrou meu fardo. Eu rezei para que ninguém mais viesse aqui." },
+        { speaker: 'Espírito do Herói', text: "Se você abriu isto, saiba: eu falhei. Cada página que você lê é um testamento da minha fraqueza." },
+        { speaker: 'Espírito do Herói', text: "Eu tentei... tentei tanto. Mas a repetição... o ciclo... ele quebra a alma." },
+        { speaker: 'Narrador', text: "A voz fantasmagórica falha, carregada de uma dor que atravessa o tempo." },
+        { speaker: 'Espírito do Herói', text: "Leve o Bestiário. É tudo que me restou. Minha dor, minhas anotações... meus erros. Por favor, não os repita." },
+        { speaker: 'Espírito do Herói', text: "Termine o que eu não pude. Liberte-me desta... memória." },
+        { speaker: 'Narrador', text: "Você ergue o livro. As páginas parecem pesadas, úmidas de arrependimento. Uma palavra, mais uma maldição que uma promessa, paira no ar: 'Concluir'." }
     ];
 
     const INTERLUDES = [
-        "Página amarelada: 'Fui impaciente com o Golem. O brilho enganou-me.'",
-        "Rabisco: 'Harpia cantou. Eu não ouvi.'",
-        "Nota final: 'Escrevo para um espelho. Perdoe-me.'"
+        "Página amarelada: 'Fui impaciente com o Golem. O brilho enganou-me. Perdi minha manopla... e parte da minha esperança.'",
+        "Rabisco na margem: 'Harpia cantou. Eu não ouvi. O som era o mesmo da minha própria voz, gritando por ajuda.'",
+        "Nota trêmula: 'Escrevo para um espelho. O rosto que me encara de volta não é mais o meu. É o rosto de um covarde.'",
+        "Mancha de tinta: 'Eu deveria ter queimado este livro. Por que estou condenando outro a seguir meus passos?'",
+        "Rasura: 'O Lich... ele sabe meu nome. Ele sussurrou sobre o ciclo. Ele disse que eu voltaria. Eu estou voltando?'"
     ];
 
     const storySegments = [
         { vn: VN_PROLOGUE, boss: BESTIARY.HARPY },
-        { vn: [{ speaker: 'Espírito do Herói', text: "Eu escrevia à luz de tochas. Minhas mãos tremiam." }, { speaker: 'Narrador', text: "O livro revela que o autor sempre deixou algo para frente." }], boss: BESTIARY.GOLEM },
-        { vn: [{ speaker: 'Espírito do Herói', text: "As notas tornaram-se confissões. Eu confessei meus medos." }, { speaker: 'Narrador', text: "O Bestiário parece menos técnico e mais pessoal." }], boss: BESTIARY.LICH },
-        { vn: [{ speaker: 'Narrador', text: "As últimas palavras falam de outro livro. Um ciclo mais antigo." }] }
+        {
+            vn: [
+                { speaker: 'Espírito do Herói', text: "Eu escrevia à luz de tochas. Minhas mãos tremiam... não pelo frio, mas pelo que eu lembrava." },
+                { speaker: 'Espírito do Herói', text: "A Harpia... eu anotei seu padrão, mas hesitei. O grito dela... parecia tão humano." },
+                { speaker: 'Narrador', text: "O livro revela que o autor não apenas catalogava, ele lamentava." },
+                { speaker: 'Narrador', text: "Ele sempre deixava o monstro mais difícil para o dia seguinte. Um dia que nunca chegava." }
+            ],
+            boss: BESTIARY.GOLEM
+        },
+        {
+            vn: [
+                { speaker: 'Espírito do Herói', text: "As notas tornaram-se confissões. Eu já não escrevia para um sucessor. Eu escrevia para uma lápide." },
+                { speaker: 'Espírito do Herói', text: "Eu confessei meus medos. O medo de morrer, sim. Mas pior... o medo de *não* morrer. De ficar preso aqui, como eu estou agora." },
+                { speaker: 'Narrador', text: "O Bestiário parece menos técnico e mais um diário de desespero." },
+                { speaker: 'Espírito do Herói', text: "Ele está próximo. O último. O que me quebrou. Eu não consigo... eu não vou..." }
+            ],
+            boss: BESTIARY.LICH
+        },
+        {
+            vn: [
+                { speaker: 'Narrador', text: "As últimas palavras estão borradas. Parecem escritas com pressa, ou por mãos que não obedeciam mais." },
+                { speaker: 'Espírito do Herói', text: "Eu o vi. O fim do caminho. E vi a mim mesmo, falhando. De novo." },
+                { speaker: 'Narrador', text: "A anotação fala de outro livro. Um ciclo mais antigo. O Bestiário que *ele* encontrou." },
+                { speaker: 'Espírito do Herói', text: "Perdoe-me. Eu sou apenas o eco. E agora... você também é." }
+            ]
+        }
     ];
 
     // state & save
