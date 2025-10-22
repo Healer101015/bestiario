@@ -138,12 +138,70 @@
         </div>
     </div>
 
+    <!-- audio.js is intentionally loaded; you said keep everything except audio content -->
     <script src="audio.js"></script>
 
     <script src="data.js"></script>
     <script src="assets.js"></script>
     <script src="ui.js"></script>
     <script src="game.js"></script>
+
+    <script>
+        // Init: load assets and start main loop when ready
+        (function () {
+            const canvas = document.getElementById('c');
+            if (!window.GameAssets) return;
+
+            const progressCB = (p) => {
+                window.GameAssets._loadedAssets = Math.round(p * window.GameAssets._totalAssets);
+            };
+
+            GameAssets.loadAll(progressCB, () => {
+                // start drawing loop after assets loaded
+                if (window._GAME && window._GAME.startLoop) window._GAME.startLoop();
+
+                // attach sliders to Audio API if present
+                const musicVol = document.getElementById('musicVol');
+                const sfxVol = document.getElementById('sfxVol');
+                if (window.AudioAPI && window.AudioAPI.setMusicVolume) {
+                    window.AudioAPI.setMusicVolume(parseFloat(localStorage.getItem('musicVol') || musicVol.value));
+                }
+                if (window.AudioAPI && window.AudioAPI.setSfxVolume) {
+                    window.AudioAPI.setSfxVolume(parseFloat(localStorage.getItem('sfxVol') || sfxVol.value));
+                }
+
+                // attach slider handlers
+                musicVol.oninput = (e) => {
+                    localStorage.setItem('musicVol', e.target.value);
+                    if (window.AudioAPI && window.AudioAPI.setMusicVolume) window.AudioAPI.setMusicVolume(parseFloat(e.target.value));
+                };
+                sfxVol.oninput = (e) => {
+                    localStorage.setItem('sfxVol', e.target.value);
+                    if (window.AudioAPI && window.AudioAPI.setSfxVolume) window.AudioAPI.setSfxVolume(parseFloat(e.target.value));
+                };
+
+                // toggle music button
+                const btnToggle = document.getElementById('btnToggleMusic');
+                btnToggle.onclick = () => {
+                    const enabled = !(localStorage.getItem('musicEnabled') === 'true');
+                    localStorage.setItem('musicEnabled', enabled ? 'true' : 'false');
+                    if (window.AudioAPI && window.AudioAPI.toggleMaster) window.AudioAPI.toggleMaster(enabled);
+                    btnToggle.textContent = enabled ? '♪' : '╳';
+                };
+                // initialize toggle text
+                const enabledStored = localStorage.getItem('musicEnabled');
+                if (enabledStored === 'false') btnToggle.textContent = '╳';
+
+                // optionally auto-start light music (user needs gesture to start audio context on some browsers)
+                document.body.addEventListener('pointerdown', async function once() {
+                    if (window.AudioAPI && window.AudioAPI.startMusic) {
+                        try { await window.AudioAPI.startMusic(); } catch (e) { /* ignore */ }
+                    }
+                    document.body.removeEventListener('pointerdown', once);
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>

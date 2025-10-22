@@ -1,13 +1,14 @@
 // ui.js
 // Gerencia todas as interações de UI fora do canvas (VN, Bestiário, Log)
 
-// --- Log Helper ---
-function log(msg, color = '#cfe8ff') {
-    const logEl = document.getElementById('log');
+// --- Log Helper (Exposto Globalmente) ---
+let logEl;
+window.log = function (msg, color = '#cfe8ff') {
+    if (!logEl) logEl = document.getElementById('log');
     if (!logEl) return;
     const t = new Date().toLocaleTimeString();
     logEl.innerHTML = `<div style="color:${color};font-family:monospace">[${t}] ${msg}</div>` + logEl.innerHTML;
-}
+};
 
 // --- Visual Novel (VN) & Interlude ---
 let vnQueue = [];
@@ -39,22 +40,24 @@ function vnStep(onComplete) {
     const it = vnQueue.shift();
     vnSpeaker.textContent = it.speaker || '';
     typeWriter(it.text, document.getElementById('vnText'));
-    // portrait uses lasthero.png for the VN (if present)
     vnPortrait.style.backgroundImage = "url('assets/images/lasthero.png')";
     if (window.AudioAPI) window.AudioAPI.sfx('page');
 }
 
+let typeWriterTimeout;
 function typeWriter(text, el, speed = 18) {
     if (!el) return;
+    if (typeWriterTimeout) clearTimeout(typeWriterTimeout);
     el.innerHTML = '';
     let i = 0;
     (function step() {
         if (i <= text.length) {
             el.innerHTML = text.slice(0, i) + (i % 2 ? '▌' : '');
             i++;
-            setTimeout(step, speed);
+            typeWriterTimeout = setTimeout(step, speed);
         } else {
             el.innerHTML = text;
+            typeWriterTimeout = null;
         }
     })();
 }
@@ -79,18 +82,19 @@ function refreshBestiary() {
 
     bestiaryList.innerHTML = '';
     const unique = {};
-    // add base entries
     Object.values(BESTIARY).forEach(b => unique[b.id] = b);
-    // add discovered entries (from global state)
-    window._GAME.state.discovered.forEach(item => {
-        if (!item) return;
-        if (typeof item === 'string') {
-            const key = item;
-            if (BESTIARY[key]) unique[key] = BESTIARY[key];
-        } else if (typeof item === 'object' && item.id) {
-            unique[item.id] = { ...(BESTIARY[item.id] || {}), ...item };
-        }
-    });
+    if (window._GAME && window._GAME.state && window._GAME.state.discovered) {
+        window._GAME.state.discovered.forEach(item => {
+            if (!item) return;
+            if (typeof item === 'string') {
+                const key = item;
+                if (BESTIARY[key]) unique[key] = BESTIARY[key];
+            } else if (typeof item === 'object' && item.id) {
+                unique[item.id] = { ...(BESTIARY[item.id] || {}), ...item };
+            }
+        });
+    }
+
     Object.values(unique).forEach(b => {
         const el = document.createElement('div');
         el.className = 'bestiary-entry';
@@ -117,7 +121,8 @@ function showBestiaryPreview(b) {
     const phasesHtml = (b.phases || []).map((p, i) => `<div style="margin-top:8px"><strong>Fase ${i + 1}</strong><div style="font-style:italic">${p.description}</div><div style="margin-top:6px">${p.pattern.map(x => `<span class="pattern-pill">${x}</span>`).join('')}</div></div>`).join('<hr/>');
     let imgHtml = '';
 
-    // Usa o bossImages pré-carregado (agora em GameAssets)
+    const bossImages = (window.GameAssets && window.GameAssets.bossImages) ? window.GameAssets.bossImages : {};
+
     if (b.id && bossImages[b.id] && bossImages[b.id].loaded) {
         imgHtml = `<div style="margin-top:8px"><img src="${bossImages[b.id].img.src}" style="width:100%;border-radius:6px" /></div>`;
     } else if (b.img) {
@@ -139,12 +144,15 @@ function showBestiaryPreview(b) {
         const clone = JSON.parse(JSON.stringify(bossData));
         clone.isProcedural = (b.id && typeof b.id === 'string' && b.id.startsWith && b.id.startsWith('RANDOM_'));
 
-        // Chama a função global do game.js
-        window._GAME.loadBoss(clone);
-        window._GAME.state.mode = 'playing';
-        updateModeLabel();
-        setUIEnabled(true);
-        if (window.AudioAPI) window.AudioAPI.sfx('page');
+        if (window._GAME && window._GAME.loadBoss) {
+            window._GAME.loadBoss(clone);
+            if (window.AudioAPI) window.AudioAPI.sfx('page');
+            window._GAME.state.mode = 'playing';
+            updateModeLabel();
+            setUIEnabled(true);
+        } else {
+            log('Erro: Núcleo do jogo não disponível.', '#ff6b6b');
+        }
     };
 }
 
@@ -159,15 +167,30 @@ function renderPattern() {
     if (!patternContainer) return;
 
     patternContainer.innerHTML = '';
-    window._GAME.state.inputs.forEach(a => {
-        const s = document.createElement('span'); s.className = 'pattern-pill'; s.textContent = a;
-        patternContainer.appendChild(s);
-    });
+    if (window._GAME && window._GAME.state && window._GAME.state.inputs) {
+        window._GAME.state.inputs.forEach(a => {
+            const s = document.createElement('span'); s.className = 'pattern-pill'; s.textContent = a;
+            patternContainer.appendChild(s);
+        });
+    }
 }
 
 function updateModeLabel() {
     const modeLabel = document.getElementById('modeLabel');
     if (!modeLabel) return;
-    const mode = window._GAME.state.mode;
-    modeLabel.textContent = mode === 'vn' ? 'Visual Novel' : mode === 'playing' ? 'Combate' : mode === 'arena' ? 'Arena' : mode === 'interlude' ? 'Interlúdio' : mode === 'bestiary' ? 'Bestiário' : 'Desconhecido';
-}   
+    if (window._GAME && window._GAME.state) {
+        const mode = window._GAME.state.mode;
+        modeLabel.textContent = mode === 'vn' ? 'Visual Novel' : mode === 'playing' ? 'Combate' : mode === 'arena' ? 'Arena' : mode === 'gameover' ? 'Game Over' : 'Intro';
+    }
+}
+
+function setUIEnabled(enabled) {
+    const executarBtn = document.getElementById('executarAcao');
+    const resetBtn = document.getElementById('resetPattern');
+    const openBestBtn = document.getElementById('openBest');
+    const nextBossBtn = document.getElementById('nextBoss');
+    if (openBestBtn) openBestBtn.disabled = !enabled;
+    if (executarBtn) executarBtn.disabled = !enabled;
+    if (resetBtn) resetBtn.disabled = !enabled;
+    if (nextBossBtn) nextBossBtn.style.display = (window._GAME && window._GAME.state && window._GAME.state.mode === 'arena' && enabled) ? 'inline-block' : 'none';
+}

@@ -9,56 +9,63 @@ const BOSS_ANIM_FRAMES = {
     'FLYING_EYE': { 'Flight': 8, 'Attack': 8, 'Death': 4, 'Take Hit': 4 }
 };
 
-// *** BESTIÁRIO ***
+// *** BESTIÁRIO (ATUALIZADO COM LORE MELANCÓLICO) ***
 const BESTIARY = {
     HARPY: {
         id: 'HARPY', name: 'Harpia das Ruínas', attackDamage: 1,
-        img: 'assets/images/harpy.png', // Caminho corrigido
+        img: 'assets/images/harpy.png',
         phases: [
-            { hpThreshold: 0.66, description: "Voa entre pilares e mergulha. Observe o bater das asas.", pattern: ['left', 'right', 'up'] },
+            { hpThreshold: 0.66, description: "Voa entre pilares e mergulha.", pattern: ['left', 'right', 'up'] },
             { hpThreshold: 0.33, description: "Enfurecida, rasga o céu.", pattern: ['left', 'down', 'right', 'up'] }
         ],
         notes: [
-            "Página 3 — Ela tinha olhos como as janelas quebradas.",
-            "Anotei o mergulho no canto com mãos trêmulas."
+            "Tática: O mergulho é o único momento. A sequência [esquerda, direita, cima] é a evasiva para a brecha. Não hesite, ou ela estará no céu novamente.",
+            "História: O grito dela... parecia humano. Na primeira vez que a enfrentei, eu parei. Foi o suficiente para rasgar meu ombro. Eu a odiei por isso.",
+            // CORREÇÃO: O texto abaixo estava mesclado com um padrão, agora está corrigido.
+            "Fardo: Escrevi seu padrão com a mão trêmula, sangue escorrendo pelo pergaminho. Agora, este livro sabe o padrão, mas eu ainda sinto a dor fantasma. Para que serve esta memória senão para atormentar?"
         ]
     },
     GOLEM: {
         id: 'GOLEM', name: 'Golem de Magma', attackDamage: 2,
-        img: 'assets/images/golem.png', // Caminho corrigido
+        img: 'assets/images/golem.png',
         phases: [
             { hpThreshold: 0.5, description: 'Lento e devastador. Pule sobre a onda e ataque o núcleo.', pattern: ['right', 'up', 'attack', 'attack'] },
             { hpThreshold: 0, description: 'Núcleo superaquecido; sequência mais longa.', pattern: ['right', 'up', 'special', 'attack', 'attack'] }
         ],
         notes: [
-            "Página 7 — O calor queimou meu punho.",
-            "Não confie apenas na força; memorize o pulso do monstro."
+            "Tática: O calor é uma distração. O padrão é um ritmo: [direita] para evitar a onda, [cima] para pular sobre ela, e [ataque, ataque] no núcleo. Não se apresse.",
+            "História: Eu perdi minha manopla esquerda aqui. O couro derreteu na rocha. Por dias, o cheiro de minha própria pele queimada foi tudo o que senti. Eu aprendi o ritmo, mas o fedor nunca saiu.",
+            "Fardo: Ele é apenas uma casca. Fúria sem mente. E eu? Eu sou uma memória que se recusa a morrer, forçado a lutar contra rocha e fogo, de novo e de novo. Quem é mais vazio?"
         ]
     },
     LICH: {
         id: 'LICH', name: 'Lich Ancião', attackDamage: 1,
-        img: 'assets/images/lich.png', // Caminho corrigido
+        img: 'assets/images/lich.png',
         phases: [
             { hpThreshold: 0.66, description: 'Canaliza magia; use especial.', pattern: ['up', 'down', 'special'] },
             { hpThreshold: 0.33, description: 'Invoca espíritos; padrão invertido.', pattern: ['special', 'down', 'up'] },
             { hpThreshold: 0, description: 'Combinação final.', pattern: ['up', 'special', 'down', 'attack'] }
         ],
         notes: [
-            "Página 21 — Ele sussurrou meu nome.",
-            "Não morri por orgulho, mas por confiar demais nas notas."
+            "Tática: Ele zomba de movimentos físicos. O [especial] é necessário para quebrar suas barreiras. Seus padrões invertem na segunda fase; não confie na memória muscular, confie no livro.",
+            "História: Ele me disse que eu não era o primeiro. Ele me disse que eu encontraria este livro. Ele riu quando eu usei o padrão que *outro* escreveu. Minha vitória não significou nada.",
+            "Fardo: Ele foi quem me quebrou. Não meu corpo, mas minha vontade. Ele me mostrou o ciclo. E agora, ao ler isto, você é a próxima volta da roda. Sinto muito."
         ]
     },
-    // *** NOVOS CHEFES ANIMADOS ***
     MUSHROOM: {
         id: 'MUSHROOM', name: 'Cogumelo Errante', attackDamage: 1,
-        img: 'bosses/Mushroom/Idle.png', // Imagem para o bestiário
-        spriteKey: 'MUSHROOM', // Chave para os spritesheets
-        w: 120, h: 120, // Tamanho no canvas
+        img: 'bosses/Mushroom/Idle.png',
+        spriteKey: 'MUSHROOM',
+        w: 120, h: 120,
         phases: [
             { hpThreshold: 0.5, description: 'Corre e ataca.', pattern: ['left', 'left', 'attack'] },
             { hpThreshold: 0, description: 'Ataque furioso.', pattern: ['left', 'attack', 'left', 'attack'] }
         ],
-        notes: ["Encontrado nas cavernas úmidas.", "Parece zangado."]
+        notes: [
+            "Tática: Não se engane pela simplicidade. Mova-se para a [esquerda] duas vezes para desviar da investida, então [ataque]. Ele é pura fúria, use isso contra ele.",
+            "História: Eu quebrei minha lâmina contra seu couro. Não por sua força, mas pela minha frustração. Eu bati e bati, e ele apenas... continuou vindo. Como eu.",
+            "Fardo: Esta criatura não tem alma. Apenas fome e raiva. Eu a invejo. Sentir apenas isso deve ser uma bênção. Escrever seu padrão pareceu... inútil."
+        ]
     },
     GOBLIN: {
         id: 'GOBLIN', name: 'Goblin Batedor', attackDamage: 1,
@@ -69,7 +76,11 @@ const BESTIARY = {
             { hpThreshold: 0.5, description: 'Esfaqueia rapidamente.', pattern: ['attack', 'attack'] },
             { hpThreshold: 0, description: 'Corre e esfaqueia.', pattern: ['right', 'right', 'attack', 'attack'] }
         ],
-        notes: ["Rápido e traiçoeiro.", "Protege bugigangas brilhantes."]
+        notes: [
+            "Tática: Rápido, mas frágil. Um [ataque, ataque] direto o desequilibra. Se ele correr ([direita, direita]), prepare-se para a mesma sequência de ataque duplo.",
+            "História: As risadas dele... ecoavam nas cavernas. Minha armadura pesada era inútil contra mil cortes de adaga. Eu o subestimei. As cicatrizes pequenas são as que mais coçam.",
+            "Fardo: Eu matei dezenas deles. E para quê? Para outro tomar seu lugar. Assim como eu. Assim como você. Somos todos substituíveis."
+        ]
     },
     SKELETON: {
         id: 'SKELETON', name: 'Esqueleto Guarda', attackDamage: 1,
@@ -77,10 +88,14 @@ const BESTIARY = {
         spriteKey: 'SKELETON',
         w: 140, h: 140,
         phases: [
-            { hpThreshold: 0.5, description: 'Levanta o escudo e ataca.', pattern: ['up', 'attack'] }, // 'up' = 'Shield' (metafórico)
+            { hpThreshold: 0.5, description: 'Levanta o escudo e ataca.', pattern: ['up', 'attack'] },
             { hpThreshold: 0, description: 'Sequência de guarda.', pattern: ['up', 'attack', 'down', 'attack'] }
         ],
-        notes: ["O escudo bloqueia o primeiro golpe.", "Não sente nada."]
+        notes: [
+            "Tática: O escudo é o problema. Um movimento para [cima] quebra sua postura, abrindo-o para um [ataque]. Ele repetirá isso. Seja paciente. Paciência é tudo que me resta.",
+            "História: Ele não sente dor. Ele não sente medo. Eu lutei contra ele e vi meu próprio reflexo. Um fantoche de ossos, obedecendo a um mestre que eu ainda não podia ver.",
+            "Fardo: Ele já está morto, mas continua. Eu estou vivo, mas já morri por dentro. Escrever isso... é a única prova de que um dia eu fui diferente dele."
+        ]
     },
     FLYING_EYE: {
         id: 'FLYING_EYE', name: 'Olho Alado', attackDamage: 1,
@@ -91,11 +106,15 @@ const BESTIARY = {
             { hpThreshold: 0.5, description: 'Voa em círculos.', pattern: ['up', 'down', 'up'] },
             { hpThreshold: 0, description: 'Mergulho rápido.', pattern: ['up', 'down', 'attack'] }
         ],
-        notes: ["Nunca pisca.", "Difícil de acertar."]
+        notes: [
+            "Tática: Ele se move verticalmente. [Cima, baixo, cima] é uma finta. O [Cima, baixo, ataque] é o mergulho real. Observe o tremor antes do ataque.",
+            "História: Eu me senti observado por dias antes de vê-lo. Aquele olho... ele não queria me matar. Ele queria... *ver*. Ver meu medo. Ver minha falha.",
+            "Fardo: Eu o acertei. Ele caiu. E outro tomou seu lugar. É apenas um observador. E este livro é seu registro. O registro de um fracasso que será assistido para sempre."
+        ]
     }
 };
 
-// *** DADOS DA HISTÓRIA (VN) ***
+// VN & story data
 const VN_PROLOGUE = [
     { speaker: '', text: "O livro jazia sob pó e ossos. O couro estava rachado, não pelo tempo, mas pelo peso do fracasso." },
     { speaker: 'Espírito do Herói', text: "Então... outro encontrou meu fardo. Eu rezei para que ninguém mais viesse aqui." },
@@ -126,36 +145,34 @@ const storySegments = [
         ],
         boss: BESTIARY.GOLEM
     },
-    // *** HISTÓRIA ATUALIZADA PARA INCLUIR NOVOS CHEFES ***
     {
         vn: [
             { speaker: 'Narrador', text: "As cavernas gotejantes ecoam. Você encontra rabiscos sobre criaturas menores." },
             { speaker: 'Espírito do Herói', text: "Até os Goblins pareciam zombar de mim. Suas risadas eram como agulhas. Eu os odiava. Eu odiava minha fraqueza." }
         ],
-        boss: BESTIARY.GOBLIN // Novo chefe
+        boss: BESTIARY.GOBLIN
     },
     {
         vn: [
             { speaker: 'Narrador', text: "Mais fundo. O ar fica pesado com esporos." },
             { speaker: 'Espírito do Herói', text: "O fungo... ele não luta com inteligência. Apenas... fúria. Como eu. Eu quebrei minha lâmina contra seu couro." }
         ],
-        boss: BESTIARY.MUSHROOM // Novo chefe
+        boss: BESTIARY.MUSHROOM
     },
     {
         vn: [
             { speaker: 'Espírito do Herói', text: "Os ossos se levantam. Eles não têm vontade própria, apenas a do mestre." },
             { speaker: 'Espírito do Herói', text: "Eles me lembraram do que eu me tornaria. Um fantoche, preso aqui para sempre." }
         ],
-        boss: BESTIARY.SKELETON // Novo chefe
+        boss: BESTIARY.SKELETON
     },
     {
         vn: [
             { speaker: 'Espírito do Herói', text: "O olho... ele vê tudo. Ele viu meu medo." },
             { speaker: 'Espírito do Herói', text: "Eu o acertei, mas ele continuou vindo. Ele não pode ser morto. É apenas um observador." }
         ],
-        boss: BESTIARY.FLYING_EYE // Novo chefe
+        boss: BESTIARY.FLYING_EYE
     },
-    // *** FIM DA ATUALIZAÇÃO DA HISTÓRIA ***
     {
         vn: [
             { speaker: 'Espírito do Herói', text: "As notas tornaram-se confissões. Eu já não escrevia para um sucessor. Eu escrevia para uma lápide." },
@@ -164,13 +181,5 @@ const storySegments = [
             { speaker: 'Espírito do Herói', text: "Ele está próximo. O último. O que me quebrou. Eu não consigo... eu não vou..." }
         ],
         boss: BESTIARY.LICH
-    },
-    {
-        vn: [
-            { speaker: 'Narrador', text: "As últimas palavras estão borradas. Parecem escritas com pressa, ou por mãos que não obedeciam mais." },
-            { speaker: 'Espírito do Herói', text: "Eu o vi. O fim do caminho. E vi a mim mesmo, falhando. De novo." },
-            { speaker: 'Narrador', text: "A anotação fala de outro livro. Um ciclo mais antigo. O Bestiário que *ele* encontrou." },
-            { speaker: 'Espírito do Herói', text: "Perdoe-me. Eu sou apenas o eco. E agora... você também é." }
-        ]
     }
 ];
