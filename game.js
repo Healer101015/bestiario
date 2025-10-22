@@ -52,23 +52,24 @@
     };
     let spritesLoaded = 0;
     // 8 frames idle (0-7), 6 frames attack (0-5)
-    const totalSprites = 8 + 6;
+    const totalSprites = 8 + 6; // Hero sprites
 
     function loadHeroSprites() {
         const onSpriteLoad = () => {
             spritesLoaded++;
-            if (spritesLoaded === totalSprites) {
-                log('Sprites do Herói carregados.', '#90ee90');
+            // Atualizado para refletir o total de sprites (herói + chefe)
+            if (spritesLoaded === (totalSprites + totalBossSprites)) {
+                log('Todos os sprites (Herói e Chefes) carregados.', '#90ee90');
             }
         };
 
         // Carregar Idle (0-7)
         for (let i = 0; i < 8; i++) {
             const img = new Image();
-            // Assumindo que a pasta 'hero' está no mesmo nível que index.html
+            // Assumindo que a pasta 'hero' está no mesmoível que index.html
             img.src = `hero/Idle/HeroKnight_Idle_${i}.png`;
             img.onload = onSpriteLoad;
-            img.onerror = () => log(`Erro ao carregar hero/Idle/HeroKnight_Idle_${i}.png`, '#ff6b6b');
+            img.onerror = () => { log(`Erro ao carregar hero/Idle/HeroKnight_Idle_${i}.png`, '#ff6b6b'); onSpriteLoad(); }; // Conta mesmo em caso de erro
             heroSprites.idle.push(img);
         }
 
@@ -78,20 +79,57 @@
             const img = new Image();
             img.src = `hero/Attack1/HeroKnight_Attack1_${i}.png`;
             img.onload = onSpriteLoad;
-            img.onerror = () => log(`Erro ao carregar hero/Attack1/HeroKnight_Attack1_${i}.png`, '#ff6b6b');
+            img.onerror = () => { log(`Erro ao carregar hero/Attack1/HeroKnight_Attack1_${i}.png`, '#ff6b6b'); onSpriteLoad(); }; // Conta mesmo em caso de erro
             heroSprites.attack1.push(img);
         }
     }
     // *** FIM DO BLOCO ADICIONADO ***
 
+    // *** NOVO: DADOS E CARREGADOR DE SPRITES DOS CHEFES (SPRITE SHEETS) ***
+    const BOSS_ANIM_FRAMES = {
+        MUSHROOM: { 'Idle': 4, 'Attack': 8, 'Run': 8, 'Death': 4, 'Take Hit': 4 },
+        GOBLIN: { 'Idle': 4, 'Attack': 8, 'Run': 8, 'Death': 4, 'Take Hit': 4 },
+        SKELETON: { 'Idle': 4, 'Attack': 8, 'Walk': 4, 'Death': 4, 'Take Hit': 4, 'Shield': 4 },
+        'FLYING_EYE': { 'Flight': 8, 'Attack': 8, 'Death': 4, 'Take Hit': 4 }
+    };
+
+    const bossSpriteSheets = {
+        MUSHROOM: {}, GOBLIN: {}, SKELETON: {}, 'FLYING_EYE': {}
+    };
+    let totalBossSprites = 0;
+
+    function loadBossSprites() {
+        const onBossSpriteLoad = () => {
+            spritesLoaded++;
+            if (spritesLoaded === (totalSprites + totalBossSprites)) {
+                log('Todos os sprites (Herói e Chefes) carregados.', '#90ee90');
+            }
+        };
+
+        Object.keys(BOSS_ANIM_FRAMES).forEach(bossKey => {
+            const anims = BOSS_ANIM_FRAMES[bossKey];
+            Object.keys(anims).forEach(animKey => {
+                totalBossSprites++;
+                const img = new Image();
+                const path = `bosses/${bossKey === 'FLYING_EYE' ? 'Flying eye' : bossKey}/${animKey}.png`;
+                img.src = path;
+                img.onload = onBossSpriteLoad;
+                img.onerror = () => { log(`Erro ao carregar ${path}`, '#ff6b6b'); onBossSpriteLoad(); }; // Conta mesmo em caso de erro
+                bossSpriteSheets[bossKey][animKey] = img;
+            });
+        });
+    }
+    // *** FIM DO NOVO BLOCO DE CHEFES ***
+
+
     // small wrapper for audio
     const Audio = window.AudioAPI;
 
-    // Bestiary base
+    // Bestiary base (*** ATUALIZADO COM NOVOS CHEFES E CAMINHOS CORRIGIDOS ***)
     const BESTIARY = {
         HARPY: {
             id: 'HARPY', name: 'Harpia das Ruínas', attackDamage: 1,
-            img: 'harpy.png',
+            img: 'assets/images/harpy.png', // Caminho corrigido
             phases: [
                 { hpThreshold: 0.66, description: "Voa entre pilares e mergulha. Observe o bater das asas.", pattern: ['left', 'right', 'up'] },
                 { hpThreshold: 0.33, description: "Enfurecida, rasga o céu.", pattern: ['left', 'down', 'right', 'up'] }
@@ -103,7 +141,7 @@
         },
         GOLEM: {
             id: 'GOLEM', name: 'Golem de Magma', attackDamage: 2,
-            img: 'golem.png',
+            img: 'assets/images/golem.png', // Caminho corrigido
             phases: [
                 { hpThreshold: 0.5, description: 'Lento e devastador. Pule sobre a onda e ataque o núcleo.', pattern: ['right', 'up', 'attack', 'attack'] },
                 { hpThreshold: 0, description: 'Núcleo superaquecido; sequência mais longa.', pattern: ['right', 'up', 'special', 'attack', 'attack'] }
@@ -115,7 +153,7 @@
         },
         LICH: {
             id: 'LICH', name: 'Lich Ancião', attackDamage: 1,
-            img: 'lich.png',
+            img: 'assets/images/lich.png', // Caminho corrigido
             phases: [
                 { hpThreshold: 0.66, description: 'Canaliza magia; use especial.', pattern: ['up', 'down', 'special'] },
                 { hpThreshold: 0.33, description: 'Invoca espíritos; padrão invertido.', pattern: ['special', 'down', 'up'] },
@@ -125,10 +163,74 @@
                 "Página 21 — Ele sussurrou meu nome.",
                 "Não morri por orgulho, mas por confiar demais nas notas."
             ]
+        },
+        // *** NOVOS CHEFES ANIMADOS ***
+        MUSHROOM: {
+            id: 'MUSHROOM', name: 'Cogumelo Errante', attackDamage: 1,
+            img: 'bosses/Mushroom/Idle.png', // Imagem para o bestiário
+            spriteKey: 'MUSHROOM', // Chave para os spritesheets
+            w: 120, h: 120, // Tamanho no canvas
+            phases: [
+                { hpThreshold: 0.5, description: 'Corre e ataca.', pattern: ['left', 'left', 'attack'] },
+                { hpThreshold: 0, description: 'Ataque furioso.', pattern: ['left', 'attack', 'left', 'attack'] }
+            ],
+            notes: ["Encontrado nas cavernas úmidas.", "Parece zangado."]
+        },
+        GOBLIN: {
+            id: 'GOBLIN', name: 'Goblin Batedor', attackDamage: 1,
+            img: 'bosses/Goblin/Idle.png',
+            spriteKey: 'GOBLIN',
+            w: 130, h: 130,
+            phases: [
+                { hpThreshold: 0.5, description: 'Esfaqueia rapidamente.', pattern: ['attack', 'attack'] },
+                { hpThreshold: 0, description: 'Corre e esfaqueia.', pattern: ['right', 'right', 'attack', 'attack'] }
+            ],
+            notes: ["Rápido e traiçoeiro.", "Protege bugigangas brilhantes."]
+        },
+        SKELETON: {
+            id: 'SKELETON', name: 'Esqueleto Guarda', attackDamage: 1,
+            img: 'bosses/Skeleton/Idle.png',
+            spriteKey: 'SKELETON',
+            w: 140, h: 140,
+            phases: [
+                { hpThreshold: 0.5, description: 'Levanta o escudo e ataca.', pattern: ['up', 'attack'] }, // 'up' = 'Shield' (metafórico)
+                { hpThreshold: 0, description: 'Sequência de guarda.', pattern: ['up', 'attack', 'down', 'attack'] }
+            ],
+            notes: ["O escudo bloqueia o primeiro golpe.", "Não sente nada."]
+        },
+        FLYING_EYE: {
+            id: 'FLYING_EYE', name: 'Olho Alado', attackDamage: 1,
+            img: 'bosses/Flying eye/Flight.png',
+            spriteKey: 'FLYING_EYE',
+            w: 160, h: 160,
+            phases: [
+                { hpThreshold: 0.5, description: 'Voa em círculos.', pattern: ['up', 'down', 'up'] },
+                { hpThreshold: 0, description: 'Mergulho rápido.', pattern: ['up', 'down', 'attack'] }
+            ],
+            notes: ["Nunca pisca.", "Difícil de acertar."]
         }
     };
+    // *** FIM DA ATUALIZAÇÃO DO BESTIÁRIO ***
+
 
     function makeRandomBoss() {
+        // Agora pode escolher entre os novos chefes também
+        const pixelBosses = ['MUSHROOM', 'GOBLIN', 'SKELETON', 'FLYING_EYE'];
+        const randomKey = pixelBosses[Math.floor(Math.random() * pixelBosses.length)];
+
+        // Retorna uma cópia do chefe do bestiário
+        if (BESTIARY[randomKey]) {
+            const clone = JSON.parse(JSON.stringify(BESTIARY[randomKey]));
+            clone.isProcedural = true; // Marca como aleatório
+            // Aleatoriza um pouco os padrões
+            clone.phases[0].pattern = Array.from({ length: 3 }, () => ['left', 'right', 'up', 'down', 'attack'][Math.floor(Math.random() * 5)]);
+            if (clone.phases[1]) {
+                clone.phases[1].pattern = Array.from({ length: 4 }, () => ['left', 'right', 'up', 'down', 'attack'][Math.floor(Math.random() * 5)]);
+            }
+            return clone;
+        }
+
+        // Fallback original
         const names = ['Ogro', 'Espectro', 'Limo', 'Bárbaro'];
         const id = 'RANDOM_' + Date.now() + Math.random().toString(36).slice(2, 8);
         const name = names[Math.floor(Math.random() * names.length)];
@@ -168,6 +270,36 @@
             ],
             boss: BESTIARY.GOLEM
         },
+        // *** HISTÓRIA ATUALIZADA PARA INCLUIR NOVOS CHEFES ***
+        {
+            vn: [
+                { speaker: 'Narrador', text: "As cavernas gotejantes ecoam. Você encontra rabiscos sobre criaturas menores." },
+                { speaker: 'Espírito do Herói', text: "Até os Goblins pareciam zombar de mim. Suas risadas eram como agulhas. Eu os odiava. Eu odiava minha fraqueza." }
+            ],
+            boss: BESTIARY.GOBLIN // Novo chefe
+        },
+        {
+            vn: [
+                { speaker: 'Narrador', text: "Mais fundo. O ar fica pesado com esporos." },
+                { speaker: 'Espírito do Herói', text: "O fungo... ele não luta com inteligência. Apenas... fúria. Como eu. Eu quebrei minha lâmina contra seu couro." }
+            ],
+            boss: BESTIARY.MUSHROOM // Novo chefe
+        },
+        {
+            vn: [
+                { speaker: 'Espírito do Herói', text: "Os ossos se levantam. Eles não têm vontade própria, apenas a do mestre." },
+                { speaker: 'Espírito do Herói', text: "Eles me lembraram do que eu me tornaria. Um fantoche, preso aqui para sempre." }
+            ],
+            boss: BESTIARY.SKELETON // Novo chefe
+        },
+        {
+            vn: [
+                { speaker: 'Espírito do Herói', text: "O olho... ele vê tudo. Ele viu meu medo." },
+                { speaker: 'Espírito do Herói', text: "Eu o acertei, mas ele continuou vindo. Ele não pode ser morto. É apenas um observador." }
+            ],
+            boss: BESTIARY.FLYING_EYE // Novo chefe
+        },
+        // *** FIM DA ATUALIZAÇÃO DA HISTÓRIA ***
         {
             vn: [
                 { speaker: 'Espírito do Herói', text: "As notas tornaram-se confissões. Eu já não escrevia para um sucessor. Eu escrevia para uma lápide." },
@@ -216,13 +348,15 @@
     loadProgress();
 
     // bestiary preview images (non-blocking)
+    // *** ATUALIZADO PARA USAR OS CAMINHOS CORRETOS ***
     const bossImages = {};
     Object.values(BESTIARY).forEach(b => {
+        if (!b.img) return; // Pula se não houver imagem definida
         const img = new Image();
-        img.src = b.img; // relative path
+        img.src = b.img; // Caminho relativo (ex: 'assets/images/harpy.png' ou 'bosses/Mushroom/Idle.png')
         bossImages[b.id] = { img, loaded: false };
         img.onload = () => bossImages[b.id].loaded = true;
-        img.onerror = () => { /* missing is okay */ };
+        img.onerror = () => { log(`Erro ao carregar imagem do bestiário: ${b.img}`, '#ff6b6b'); };
     });
 
     // Bestiary UI (robust to types)
@@ -238,7 +372,8 @@
                 const key = item;
                 if (BESTIARY[key]) unique[key] = BESTIARY[key];
             } else if (typeof item === 'object' && item.id) {
-                unique[item.id] = item;
+                // Garante que a entrada descoberta tenha todos os dados mais recentes do BESTIARY
+                unique[item.id] = { ...(BESTIARY[item.id] || {}), ...item };
             }
         });
         Object.values(unique).forEach(b => {
@@ -263,12 +398,29 @@
         const notesHtml = (b.notes || []).map(n => `<div style="margin-bottom:6px;font-style:italic">${n}</div>`).join('');
         const phasesHtml = (b.phases || []).map((p, i) => `<div style="margin-top:8px"><strong>Fase ${i + 1}</strong><div style="font-style:italic">${p.description}</div><div style="margin-top:6px">${p.pattern.map(x => `<span class="pattern-pill">${x}</span>`).join('')}</div></div>`).join('<hr/>');
         let imgHtml = '';
-        if (b.img) imgHtml = `<div style="margin-top:8px"><img src="${b.img}" style="width:100%;border-radius:6px" onerror="this.style.display='none'"/></div>`;
+        // Usa o bossImages pré-carregado
+        if (b.id && bossImages[b.id] && bossImages[b.id].loaded) {
+            imgHtml = `<div style="margin-top:8px"><img src="${bossImages[b.id].img.src}" style="width:100%;border-radius:6px" /></div>`;
+        } else if (b.img) {
+            imgHtml = `<div style="margin-top:8px"><img src="${b.img}" style="width:100%;border-radius:6px" onerror="this.style.display='none'"/></div>`;
+        }
+
         bestiaryPreview.innerHTML = `<h4>${b.name}</h4>${imgHtml}${notesHtml}<hr/>${phasesHtml}<div style="margin-top:10px"><button id="spawnFromBest">Enfrentar</button></div>`;
-        document.getElementById('spawnFromBest').onclick = () => {
+
+        const spawnBtn = document.getElementById('spawnFromBest');
+        if (!spawnBtn) return;
+
+        spawnBtn.onclick = () => {
             closeBestiary();
-            const clone = JSON.parse(JSON.stringify(b));
+            // Pega a definição completa do BESTIARY
+            const bossData = BESTIARY[b.id];
+            if (!bossData) {
+                log(`Erro: Não foi possível encontrar dados para o chefe ${b.id}`, '#ff6b6b');
+                return;
+            }
+            const clone = JSON.parse(JSON.stringify(bossData));
             clone.isProcedural = (b.id && typeof b.id === 'string' && b.id.startsWith && b.id.startsWith('RANDOM_'));
+
             loadBoss(clone);
             state.mode = 'playing';
             updateModeLabel();
@@ -300,7 +452,7 @@
         vnSpeaker.textContent = it.speaker || '';
         typeWriter(it.text, vnText);
         // portrait uses lasthero.png for the VN (if present)
-        vnPortrait.style.backgroundImage = "url('lasthero.png')";
+        vnPortrait.style.backgroundImage = "url('assets/images/lasthero.png')"; // Caminho corrigido
         Audio.sfx('page');
     }
     function typeWriter(text, el, speed = 18) {
@@ -326,10 +478,32 @@
     }
 
     // boss load & management
+    // *** ATUALIZADO PARA INCLUIR ESTADOS DE ANIMAÇÃO ***
     function loadBoss(bossData) {
         if (!bossData) return;
         const maxHp = bossData.phases.length * 3 + 2;
-        state.boss = { ...bossData, hp: maxHp, maxHp: maxHp, currentPhase: 0 };
+
+        let defaultAnimState = 'Idle';
+        if (bossData.spriteKey === 'FLYING_EYE') {
+            defaultAnimState = 'Flight';
+        } else if (bossData.spriteKey === 'SKELETON') {
+            defaultAnimState = 'Walk'; // Esqueleto começa andando
+        }
+
+        state.boss = {
+            ...bossData,
+            hp: maxHp,
+            maxHp: maxHp,
+            currentPhase: 0,
+            // Estado de animação
+            animState: defaultAnimState,
+            animFrame: 0,
+            animTimer: 0,
+            dir: 'left', // Chefes olham para a esquerda por padrão
+            w: bossData.w || 160, // Largura de desenho
+            h: bossData.h || 160  // Altura de desenho
+        };
+
         state.inputs = [];
         state.mistakes = 0;
         // discovered store
@@ -375,6 +549,18 @@
             state.hero.animState = 'attack1';
             state.hero.animFrame = 0;
             state.hero.animTimer = 0;
+            // *** NOVO: Aciona a animação do chefe
+            if (state.boss && state.boss.spriteKey) {
+                state.boss.animState = 'Take Hit';
+                state.boss.animFrame = 0;
+                state.boss.animTimer = 0;
+            }
+        }
+
+        // Lógica de animação de defesa (metafórica para o esqueleto)
+        if (action === 'up' && state.boss && state.boss.spriteKey === 'SKELETON') {
+            state.boss.animState = 'Shield';
+            state.boss.animFrame = 0;
         }
 
         state.hero.x = Math.max(state.hero.w / 2, Math.min(canvas.width - state.hero.w / 2, state.hero.x));
@@ -404,7 +590,20 @@
     // confirm action handler
     function confirmAction() {
         if (!state.boss || (state.mode !== 'playing' && state.mode !== 'arena')) return;
+
+        // *** NOVO: Chefe ataca ao confirmar ***
+        if (state.boss && state.boss.spriteKey) {
+            state.boss.animState = 'Attack';
+            state.boss.animFrame = 0;
+            state.boss.animTimer = 0;
+        }
+
         const phase = state.boss.phases[state.boss.currentPhase];
+        if (!phase) {
+            log('Erro: Chefe sem fase definida.', '#ff6b6b');
+            return;
+        }
+
         const success = JSON.stringify(state.inputs) === JSON.stringify(phase.pattern);
 
         // secret: burn book sequence (when fighting LICH and low hp)
@@ -417,6 +616,13 @@
             if (Audio) Audio.sfx('hit');
             state.boss.hp -= 2;
             state.mistakes = 0;
+
+            // *** NOVO: Animação de morte do chefe ***
+            if (state.boss.hp <= 0 && state.boss.spriteKey) {
+                state.boss.animState = 'Death';
+                state.boss.animFrame = 0;
+            }
+
             // check phase transition
             for (let i = state.boss.phases.length - 1; i >= 0; i--) {
                 if ((state.boss.hp / state.boss.maxHp) <= state.boss.phases[i].hpThreshold) {
@@ -431,43 +637,49 @@
             if (state.boss.hp <= 0) {
                 log(`${state.boss.name} foi derrotado!`, '#ffd580');
                 if (Audio) Audio.sfx('page');
-                if (state.mode === 'playing') {
-                    state.chapterIndex++; state.storyIndex++;
-                    saveProgress();
-                    const frag = INTERLUDES[Math.floor(Math.random() * INTERLUDES.length)];
-                    playInterlude(frag, () => {
-                        // continue story if available
-                        if (storySegments[state.storyIndex] && storySegments[state.storyIndex].vn) {
-                            state.mode = 'vn'; updateModeLabel();
-                            playVN(storySegments[state.storyIndex].vn, () => {
+
+                // Atraso para permitir a animação de morte
+                const delay = state.boss.spriteKey ? 1500 : 100;
+
+                setTimeout(() => {
+                    if (state.mode === 'playing') {
+                        state.chapterIndex++; state.storyIndex++;
+                        saveProgress();
+                        const frag = INTERLUDES[Math.floor(Math.random() * INTERLUDES.length)];
+                        playInterlude(frag, () => {
+                            // continue story if available
+                            if (storySegments[state.storyIndex] && storySegments[state.storyIndex].vn) {
+                                state.mode = 'vn'; updateModeLabel();
+                                playVN(storySegments[state.storyIndex].vn, () => {
+                                    if (storySegments[state.storyIndex] && storySegments[state.storyIndex].boss) {
+                                        loadBoss(storySegments[state.storyIndex].boss);
+                                        state.mode = 'playing'; updateModeLabel(); setUIEnabled(true);
+                                    } else {
+                                        // end -> arena
+                                        state.mode = 'arena'; updateModeLabel();
+                                        loadBoss(makeRandomBoss());
+                                        nextBossBtn.style.display = 'inline-block';
+                                        setUIEnabled(true);
+                                    }
+                                });
+                            } else {
+                                // direct proceed
                                 if (storySegments[state.storyIndex] && storySegments[state.storyIndex].boss) {
                                     loadBoss(storySegments[state.storyIndex].boss);
                                     state.mode = 'playing'; updateModeLabel(); setUIEnabled(true);
                                 } else {
-                                    // end -> arena
                                     state.mode = 'arena'; updateModeLabel();
                                     loadBoss(makeRandomBoss());
                                     nextBossBtn.style.display = 'inline-block';
                                     setUIEnabled(true);
                                 }
-                            });
-                        } else {
-                            // direct proceed
-                            if (storySegments[state.storyIndex] && storySegments[state.storyIndex].boss) {
-                                loadBoss(storySegments[state.storyIndex].boss);
-                                state.mode = 'playing'; updateModeLabel(); setUIEnabled(true);
-                            } else {
-                                state.mode = 'arena'; updateModeLabel();
-                                loadBoss(makeRandomBoss());
-                                nextBossBtn.style.display = 'inline-block';
-                                setUIEnabled(true);
                             }
-                        }
-                    });
-                } else {
-                    // arena: spawn new after short delay
-                    setTimeout(() => loadBoss(makeRandomBoss()), 1200);
-                }
+                        });
+                    } else {
+                        // arena: spawn new after short delay
+                        setTimeout(() => loadBoss(makeRandomBoss()), 1200);
+                    }
+                }, delay);
             }
         } else if (secretMatch && isFinalBoss) {
             // secret path
@@ -526,6 +738,7 @@
         state.inputs = []; state.mistakes = 0; state.storyIndex = 0; state.chapterIndex = 0; state.discovered = [];
         state.mode = 'vn'; updateModeLabel();
         document.getElementById('gameOverModal').classList.add('hidden');
+        // Reinicia do primeiro segmento da história (Harpy)
         playVN(storySegments[0].vn, () => { loadBoss(storySegments[0].boss); state.mode = 'playing'; setUIEnabled(true); updateModeLabel(); });
     };
 
@@ -553,10 +766,15 @@
 
         // 3. Pega o frame (imagem) atual
         let frameImg = currentAnimArray[h.animFrame];
-        if (!frameImg) {
+        if (!frameImg || !frameImg.complete || frameImg.naturalWidth === 0) {
             // Fallback caso a imagem não esteja carregada
             frameImg = heroSprites.idle[0];
+            if (!frameImg) { // Se nem o idle[0] carregou
+                ctx.restore();
+                return;
+            }
         }
+
 
         // 4. Lógica para virar o sprite (esquerda/direita)
         if (h.dir === 'left') {
@@ -564,42 +782,98 @@
         }
 
         // 5. Desenha a imagem na tela
-        if (frameImg && frameImg.complete) {
-            // A posição (h.x, h.y) é a base central do herói
-            const drawX = (h.x - h.w / 2);
-            const drawY = (h.y - h.h); // h.y é o chão, desenha h.h pixels para cima
+        // A posição (h.x, h.y) é a base central do herói
+        const drawX = (h.x - h.w / 2);
+        const drawY = (h.y - h.h); // h.y é o chão, desenha h.h pixels para cima
 
-            if (h.dir === 'left') {
-                // Ao usar scale(-1, 1), a coordenada X é invertida
-                ctx.drawImage(frameImg, -drawX - h.w, drawY, h.w, h.h);
-            } else {
-                ctx.drawImage(frameImg, drawX, drawY, h.w, h.h);
-            }
+        if (h.dir === 'left') {
+            // Ao usar scale(-1, 1), a coordenada X é invertida
+            ctx.drawImage(frameImg, -drawX - h.w, drawY, h.w, h.h);
+        } else {
+            ctx.drawImage(frameImg, drawX, drawY, h.w, h.h);
         }
+
 
         ctx.restore();
     }
     // *** FIM DA SUBSTITUIÇÃO ***
 
+    // *** FUNÇÃO drawBoss TOTALMENTE REESCRITA ***
     function drawBoss() {
         if (!state.boss) return;
-        const bx = 660, by = GROUND_Y;
-        state.boss.x = bx; state.boss.y = by - 60;
+
+        const b = state.boss;
+        const bx = 660, by = GROUND_Y; // Posição base do chefe
+
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(bx, GROUND_Y, 80, 18, 0, 0, Math.PI * 2); ctx.fill();
-        if (state.boss.img && bossImages[state.boss.id] && bossImages[state.boss.id].loaded) {
-            const img = bossImages[state.boss.id].img;
-            const fixedH = 160;
+
+        // Desenha a sombra primeiro
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(bx, GROUND_Y, b.w / 2.5, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Chefe está olhando para a esquerda (dir: 'left')
+        ctx.scale(-1, 1);
+        const drawX = -(bx - b.w / 2) - b.w;
+        const drawY = by - b.h;
+
+
+        // Lógica de desenho (Sprite Sheet ou Imagem Estática)
+        if (b.spriteKey && BOSS_ANIM_FRAMES[b.spriteKey]) {
+            // *** 1. LÓGICA DE SPRITE SHEET (Mushroom, Goblin, etc.) ***
+
+            let animName = b.animState;
+            // Fallbacks de animação
+            if (animName === 'Idle' && b.spriteKey === 'FLYING_EYE') animName = 'Flight';
+            if (animName === 'Idle' && b.spriteKey === 'SKELETON') animName = 'Walk';
+
+            const sheet = bossSpriteSheets[b.spriteKey][animName];
+            const frameCount = BOSS_ANIM_FRAMES[b.spriteKey][animName];
+
+            if (sheet && sheet.complete && sheet.naturalWidth > 0 && frameCount > 0) {
+                const frameW = sheet.naturalWidth / frameCount;
+                const frameH = sheet.naturalHeight;
+                const sx = b.animFrame * frameW;
+
+                ctx.drawImage(
+                    sheet,  // A imagem do sprite sheet
+                    sx, 0,  // (sx, sy) Posição do quadro no sheet
+                    frameW, frameH, // (sw, sh) Tamanho do quadro no sheet
+                    drawX, drawY, // (dx, dy) Posição no canvas
+                    b.w, b.h  // (dw, dh) Tamanho do desenho no canvas
+                );
+
+            } else {
+                // Fallback (caixa) se o sprite sheet falhar
+                ctx.fillStyle = '#b03d3d';
+                ctx.fillRect(drawX, drawY, b.w, b.h);
+            }
+
+        } else if (b.img && bossImages[b.id] && bossImages[b.id].loaded) {
+            // *** 2. LÓGICA DE IMAGEM ESTÁTICA (Harpy, Golem, Lich) ***
+
+            const img = bossImages[b.id].img;
+            const fixedH = b.h; // Usa a altura definida
             const aspect = img.width / img.height || 1;
-            const w = fixedH * aspect;
-            const h = fixedH;
-            ctx.drawImage(img, bx - w / 2, by - h, w, h);
+            const fixedW = fixedH * aspect;
+
+            // Ajusta o X de desenho para centralizar a imagem estática
+            const staticDrawX = -(bx - fixedW / 2) - fixedW;
+            const staticDrawY = by - fixedH;
+
+            ctx.drawImage(img, staticDrawX, staticDrawY, fixedW, fixedH);
+
         } else {
-            ctx.fillStyle = '#b0753d'; ctx.fillRect(bx - 50, by - 120, 100, 120);
-            ctx.fillStyle = '#7a4b2b'; ctx.fillRect(bx - 18, by - 30, 36, 28);
+            // *** 3. FALLBACK GERAL (Caixa) ***
+            ctx.fillStyle = '#7a4b2b';
+            ctx.fillRect(drawX, drawY, b.w, b.h);
         }
+
         ctx.restore();
     }
+    // *** FIM DA REESCRITA DE drawBoss ***
+
 
     function drawHUD() {
         ctx.save();
@@ -640,6 +914,7 @@
 
     // *** CONSTANTE DE ANIMAÇÃO ADICIONADA ***
     const ANIM_SPEED = 90; // ms por frame (aprox 11 FPS)
+    const BOSS_ANIM_SPEED = 120; // Chefes um pouco mais lentos
 
     // *** FUNÇÃO loop ATUALIZADA ***
     function loop(now) {
@@ -669,11 +944,52 @@
                 }
             }
         }
-        // FIM DA LÓGICA DE ANIMAÇÃO
+        // FIM DA LÓGICA DE ANIMAÇÃO DO HERÓI
 
-        //if (state.hero.isAttacking > 0) state.hero.isAttacking -= dt; // Linha antiga removida
+        // *** NOVA LÓGICA DE ANIMAÇÃO DO CHEFE ***
+        if (state.boss && state.boss.spriteKey) {
+            const b = state.boss;
+            b.animTimer += dt;
+            if (b.animTimer >= BOSS_ANIM_SPEED) {
+                b.animTimer = 0;
+
+                let animName = b.animState;
+                // Fallbacks de animação
+                if (animName === 'Idle' && b.spriteKey === 'FLYING_EYE') animName = 'Flight';
+                if (animName === 'Idle' && b.spriteKey === 'SKELETON') animName = 'Walk';
+
+                const frameCount = BOSS_ANIM_FRAMES[b.spriteKey][animName];
+
+                if (frameCount) {
+                    b.animFrame++;
+                    // Lógica de loop de animação
+                    if (b.animFrame >= frameCount) {
+                        // Animações que não dão loop voltam para o Idle/Padrão
+                        if (b.animState === 'Attack' || b.animState === 'Take Hit' || b.animState === 'Shield') {
+                            b.animFrame = 0;
+                            // Retorna ao estado padrão
+                            if (b.spriteKey === 'FLYING_EYE') b.animState = 'Flight';
+                            else if (b.spriteKey === 'SKELETON') b.animState = 'Walk';
+                            else b.animState = 'Idle';
+                        }
+                        // Animação de morte para no último quadro
+                        else if (b.animState === 'Death') {
+                            b.animFrame = frameCount - 1;
+                        }
+                        // Animações de Idle/Run/Walk dão loop
+                        else {
+                            b.animFrame = 0;
+                        }
+                    }
+                } else {
+                    b.animFrame = 0; // Reseta se a animação não for encontrada
+                }
+            }
+        }
+        // *** FIM DA LÓGICA DE ANIMAÇÃO DO CHEFE ***
+
         if (state.hero.isInvincible > 0) state.hero.isInvincible -= dt;
-        if (state.boss && state.boss.isAttacking > 0) state.boss.isAttacking -= dt;
+        // if (state.boss && state.boss.isAttacking > 0) state.boss.isAttacking -= dt; // Não mais necessário
 
         if (state.mode === 'playing' || state.mode === 'arena') drawGame(dt);
         else if (state.mode === 'vn') drawIntro();
@@ -699,7 +1015,8 @@
         document.getElementById('openBest').disabled = !enabled;
         executarBtn.disabled = !enabled;
         resetBtn.disabled = !enabled;
-        nextBossBtn.disabled = !enabled;
+        // nextBossBtn.disabled = !enabled; // Habilitado apenas em modo arena
+        nextBossBtn.style.display = (state.mode === 'arena' && enabled) ? 'inline-block' : 'none';
     }
 
     // controls hooking
@@ -708,10 +1025,10 @@
 
     executarBtn.onclick = () => confirmAction();
     resetBtn.onclick = () => resetPattern();
-    nextBossBtn.onclick = () => { loadBoss(makeRandomBoss()); state.mode = 'arena'; updateModeLabel(); setUIEnabled(true); nextBossBtn.style.display = 'inline-block'; };
+    nextBossBtn.onclick = () => { loadBoss(makeRandomBoss()); state.mode = 'arena'; updateModeLabel(); setUIEnabled(true); };
 
-    document.getElementById('openVN').onclick = () => playVN(VN_PROLOGUE);
-    document.getElementById('openBest').onclick = () => { refreshBestiary(); };
+    // document.getElementById('openVN').onclick = () => playVN(VN_PROLOGUE); // Redundante
+    // document.getElementById('openBest').onclick = () => { refreshBestiary(); }; // Redundante
     document.getElementById('openBest').addEventListener('click', () => { refreshBestiary(); bestiaryModal.classList.remove('hidden'); Audio.sfx('page'); });
 
     // attach on-screen actions to same registerAction so input unify
@@ -734,18 +1051,30 @@
     refreshBestiary();
     renderPattern();
     setUIEnabled(false);
-    loadHeroSprites(); // *** CHAMADA PARA CARREGAR SPRITES ***
+    loadHeroSprites(); // *** CHAMADA PARA CARREGAR SPRITES DO HERÓI ***
+    loadBossSprites(); // *** CHAMADA PARA CARREGAR SPRITES DOS CHEFES ***
     drawIntro();
-    // start VN automatically
-    playVN(VN_PROLOGUE, () => {
-        loadBoss(BESTIARY.HARPY);
-        state.mode = 'playing';
+
+    // Inicia a história (agora usa o storyIndex salvo)
+    loadProgress(); // Garante que o progresso foi carregado
+    const startSegment = storySegments[state.storyIndex] || storySegments[0];
+
+    playVN(startSegment.vn, () => {
+        if (startSegment.boss) {
+            loadBoss(startSegment.boss);
+            state.mode = 'playing';
+        } else {
+            // Se a história terminou, vai para a arena
+            loadBoss(makeRandomBoss());
+            state.mode = 'arena';
+        }
         updateModeLabel();
         setUIEnabled(true);
     });
+
     requestAnimationFrame(loop);
 
     // export small helpers for console debugging
-    window._GAME = { state, loadBoss, makeRandomBoss, refreshBestiary, confirmAction, registerAction };
+    window._GAME = { state, loadBoss, makeRandomBoss, refreshBestiary, confirmAction, registerAction, BESTIARY, bossSpriteSheets, heroSprites };
 
 })();
